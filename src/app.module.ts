@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { User } from './modules/users/entities/user.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
+import { MascotasModule } from './modules/mascotas/mascotas/mascotas.module';
+import { Mascota } from './modules/mascotas/mascotas/entities/mascota.entity';
 
 @Module({
   imports: [
@@ -17,12 +19,13 @@ import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         ssl: { rejectUnauthorized: false },
-        entities: [User, RefreshToken],
+        entities: [User, RefreshToken, Mascota],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
       }),
     }),
     AuthModule,
+    MascotasModule
   ],
   controllers: [AppController],
   providers: [AppService],
