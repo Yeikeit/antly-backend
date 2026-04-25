@@ -16,7 +16,7 @@ export class User {
   @Column({ length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'password_hash', length: 255 })
+  @Column({ name: 'password_hash', length: 255, select: false })
   passwordHash: string;
 
   @Column({ name: 'first_name', length: 100 })
@@ -36,4 +36,8 @@ export class User {
 
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
+
+  get fullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
 }
