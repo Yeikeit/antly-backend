@@ -18,7 +18,9 @@ import { Mascota } from './modules/mascotas/mascotas/entities/mascota.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        ssl: { rejectUnauthorized: false },
+        ssl: config.get<string>('DATABASE_SSL') === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
         entities: [User, RefreshToken, Mascota],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
