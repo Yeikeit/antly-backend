@@ -6,8 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { User } from './modules/users/entities/user.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
-import { MascotasModule } from './modules/mascotas/mascotas/mascotas.module';
-import { Mascota } from './modules/mascotas/mascotas/entities/mascota.entity';
+import { MascotasModule } from './modules/mascotas/mascotas.module';
+import { Mascota } from './modules/mascotas/entities/mascota.entity';
 
 @Module({
   imports: [
