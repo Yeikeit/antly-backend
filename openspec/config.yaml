@@ -1,0 +1,51 @@
+schema: spec-driven
+
+context: |
+  Project: Antly — personal finance & monthly budget management web app.
+  MVP for students and young professionals to replace spreadsheets with structured budgeting.
+
+  Core domain: Users define income sources, record monthly income, create one budget per month,
+  allocate that budget to subcategories, record daily expenses, and view financial summaries.
+
+  Tech stack:
+  - Frontend: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, React Hook Form, Zod 4
+  - Backend: NestJS 11, TypeORM 0.3, JWT (access + refresh), class-validator, bcrypt
+  - Database: PostgreSQL 16 — UUID PKs, NUMERIC(14,2) for money
+  - Infra: Docker Compose (local), Vercel + Render + Neon (cloud)
+
+  Key business rules:
+  - One budget per user per (year, month)
+  - Two-level category hierarchy: parent groups, subcategories operate (allocations + transactions)
+  - Exceeding allocation warns, does not block
+  - Every budget edit must log to budget_change_logs
+  - All data scoped to authenticated user
+
+  Backend conventions:
+  - Modular NestJS: one module per domain (controller, service, DTOs, entity, module)
+  - Thin controllers, logic in services
+  - DTOs with class-validator on all inputs
+  - Shared guards/decorators in src/common/
+  - Swagger enabled at /api
+
+  Frontend conventions:
+  - Components in PascalCase, hooks prefixed with "use"
+  - API calls centralized in lib/api/<domain>.ts
+  - Zod validation schemas in lib/validations/<domain>.ts
+  - React Hook Form + Zod resolver on all forms
+  - No business logic in page components
+
+  General:
+  - Conventional Commits
+  - Prettier: single quotes, trailing commas
+  - MVP scope — do not over-engineer
+
+rules:
+  proposal:
+    - Respect MVP scope; call out explicitly if a proposal touches out-of-scope features
+    - Include affected modules (frontend and/or backend) in every proposal
+    - State which existing endpoints or entities are involved
+  tasks:
+    - Each task should be completable in one focused session
+    - Specify file paths relative to antly-frontend/ or antly-backend/
+    - Backend tasks: note which NestJS module is affected
+    - Frontend tasks: note which route group or component tree is affected

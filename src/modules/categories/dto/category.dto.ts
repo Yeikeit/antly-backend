@@ -3,6 +3,27 @@ import {
     IsBoolean, IsInt, Min, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+import { CategoryType } from '../entities/category.entity';
+
+export class CategoryResponseDto {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    name: string;
+
+    @ApiProperty({ enum: ['EXPENSE', 'SAVING', 'INCOME'] })
+    type: CategoryType;
+
+    @ApiProperty()
+    sortOrder: number;
+}
+
+export class CategoryTreeDto extends CategoryResponseDto {
+    @ApiProperty({ type: [CategoryResponseDto] })
+    subcategories: CategoryResponseDto[];
+}
 
 export class CreateCategoryDto {
     @IsString()
