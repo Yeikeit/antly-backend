@@ -1,4 +1,4 @@
-import type { CategoryType } from './entities/category.entity';
+import type { CategoryType } from '../entities/category.entity';
 
 interface TemplateCategory {
   name: string;

@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Category } from '../categories/entities/category.entity';
-import { CATEGORY_TEMPLATE } from '../categories/category-template';
+import { CATEGORY_TEMPLATE } from '../categories/utils/category-template';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
