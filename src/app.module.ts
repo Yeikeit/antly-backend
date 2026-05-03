@@ -6,8 +6,6 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { User } from './modules/users/entities/user.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
-import { MascotasModule } from './modules/mascotas/mascotas.module';
-import { Mascota } from './modules/mascotas/entities/mascota.entity';
 import { Budget } from './modules/budgets/entities/budget.entity';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { BudgetAllocation } from './modules/budget-allocations/entities/budget-allocation.entity';
@@ -34,13 +32,12 @@ import { UsersModule } from './modules/users/users.module';
         ssl: config.get<string>('DATABASE_SSL') === 'true'
           ? { rejectUnauthorized: false }
           : false,
-        entities: [User, RefreshToken, Mascota, Budget, BudgetAllocation, Category, IncomeSource, Income, Transaction, User],
+        entities: [User, RefreshToken, Budget, BudgetAllocation, Category, IncomeSource, Income, Transaction, User],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
       }),
     }),
     AuthModule,
-    MascotasModule,
     BudgetsModule,
     BudgetAllocationsModule,
     CategoriesModule,

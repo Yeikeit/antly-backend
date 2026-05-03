@@ -1,10 +1,11 @@
-import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, Min, Max } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsBoolean, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateBudgetDto {
     @Type(() => Number) @IsInt() @Min(2020) year: number;
     @Type(() => Number) @IsInt() @Min(1) @Max(12) month: number;
     @IsOptional() @IsString() notes?: string;
+    @IsOptional() @IsBoolean() useTemplate?: boolean;
 }
 
 export class UpdateBudgetStatusDto {

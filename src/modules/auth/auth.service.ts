@@ -11,6 +11,8 @@ import { createHash, randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { Category } from '../categories/entities/category.entity';
+import { CATEGORY_TEMPLATE } from '../categories/category-template';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -21,6 +23,8 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -41,8 +45,44 @@ export class AuthService {
       lastName: dto.lastName,
     });
     await this.userRepository.save(user);
+    await this.seedDefaultCategories(user.id);
 
     return this.buildTokenResponse(user);
+  }
+
+  private async seedDefaultCategories(userId: string): Promise<void> {
+    const categories: Partial<Category>[] = [];
+
+    for (const template of CATEGORY_TEMPLATE) {
+      const parent = this.categoryRepository.create({
+        userId,
+        parentId: null,
+        name: template.name,
+        level: 1,
+        type: template.type,
+        sourceType: 'DEFAULT',
+        sortOrder: template.sortOrder,
+      });
+      const savedParent = await this.categoryRepository.save(parent);
+
+      for (const sub of template.subcategories) {
+        categories.push({
+          userId,
+          parentId: savedParent.id,
+          name: sub.name,
+          level: 2,
+          type: sub.type,
+          sourceType: 'DEFAULT',
+          sortOrder: sub.sortOrder,
+        });
+      }
+    }
+
+    if (categories.length > 0) {
+      await this.categoryRepository.save(
+        categories.map((c) => this.categoryRepository.create(c)),
+      );
+    }
   }
 
   async login(dto: LoginDto) {

@@ -7,10 +7,11 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { Category } from '../categories/entities/category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, RefreshToken]),
+    TypeOrmModule.forFeature([User, RefreshToken, Category]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
