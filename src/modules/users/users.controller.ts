@@ -1,33 +1,47 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/user.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 
-
+@ApiTags('Users')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create() {
-    return this.usersService.create();
+  @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil del usuario' })
+  @Get('me')
+  getProfile(@CurrentUser() user: JwtPayload) {
+    return this.usersService.getProfile(user.sub);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOperation({ summary: 'Actualizar nombre o email del usuario' })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado' })
+  @ApiResponse({ status: 409, description: 'Email ya en uso' })
+  @Patch('me')
+  updateProfile(@CurrentUser() user: JwtPayload, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateProfile(user.sub, dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update() {
-    return this.usersService.update();
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @ApiOperation({ summary: 'Cambiar contraseña' })
+  @ApiResponse({ status: 204, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 401, description: 'Contraseña actual incorrecta' })
+  @Patch('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(user.sub, dto);
   }
 }
