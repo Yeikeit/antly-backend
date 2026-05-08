@@ -5,10 +5,10 @@ import { BudgetAllocationsController } from './budget-allocations.controller';
 import { BudgetAllocation } from './entities/budget-allocation.entity';
 import { Budget } from '../budgets/entities/budget.entity';
 import { Category } from '../categories/entities/category.entity';
-import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BudgetAllocation, Budget, Category]), JwtModule.register({})],
+  imports: [TypeOrmModule.forFeature([BudgetAllocation, Budget, Category]), AuthModule],
   controllers: [BudgetAllocationsController],
   providers: [BudgetAllocationsService],
 })

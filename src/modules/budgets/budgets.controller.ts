@@ -11,7 +11,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { BudgetsService } from './budgets.service';
-import { CreateBudgetDto, CloseBudgetDto } from './dto/budget.dto';
+import { CreateBudgetDto, CloseBudgetDto, CreateBudgetWizardDto } from './dto/budget.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -29,6 +29,13 @@ export class BudgetsController {
   @HttpCode(HttpStatus.CREATED)
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateBudgetDto) {
     return this.budgetsService.create(user.sub, dto);
+  }
+
+  @ApiOperation({ summary: 'Crear presupuesto completo desde el wizard (una sola transacción)' })
+  @Post('wizard')
+  @HttpCode(HttpStatus.CREATED)
+  createWizard(@CurrentUser() user: JwtPayload, @Body() dto: CreateBudgetWizardDto) {
+    return this.budgetsService.createWizard(user.sub, dto);
   }
 
   @ApiOperation({ summary: 'Obtener todos los presupuestos del usuario Logueado' })

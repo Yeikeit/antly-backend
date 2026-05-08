@@ -16,7 +16,10 @@ import {
   CloseBudgetDto,
   BudgetSummary,
   AllocationSummary,
+  CreateBudgetWizardDto,
 } from './dto/budget.dto';
+import { Income } from '../incomes/entities/income.entity';
+import { IncomeSource } from '../income-sources/entities/income-source.entity';
 
 @Injectable()
 export class BudgetsService {
@@ -69,6 +72,105 @@ export class BudgetsService {
           await manager.save(BudgetAllocation, allocations);
         }
       }
+
+      return manager.findOneOrFail(Budget, {
+        where: { id: budget.id },
+        relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
+      });
+    });
+  }
+
+  async createWizard(userId: string, dto: CreateBudgetWizardDto): Promise<Budget> {
+    const exists = await this.budgetRepo.findOne({
+      where: { userId, year: dto.year, month: dto.month },
+    });
+    if (exists) {
+      throw new ConflictException(
+        `Ya existe un presupuesto para ${dto.year}-${String(dto.month).padStart(2, '0')}`,
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+  
+      const budget = manager.create(Budget, {
+        userId,
+        year: dto.year,
+        month: dto.month,
+        notes: dto.notes ?? null,
+        status: 'ACTIVE',
+        totalIncomeAmount: 0,
+        totalAllocatedAmount: 0,
+      });
+      await manager.save(budget);
+
+      const receivedDate = `${dto.year}-${String(dto.month).padStart(2, '0')}-01`;
+      let totalIncome = 0;
+
+      for (const src of dto.incomeSources) {
+        let incomeSource = await manager.findOne(IncomeSource, {
+          where: { userId, name: src.name },
+        });
+        if (!incomeSource) {
+          incomeSource = await manager.save(
+            manager.create(IncomeSource, { userId, name: src.name, isActive: true }),
+          );
+        }
+
+        await manager.save(
+          manager.create(Income, {
+            userId,
+            incomeSourceId: incomeSource.id,
+            budgetId: budget.id,
+            amount: src.amount,
+            receivedDate,
+          }),
+        );
+        totalIncome += src.amount;
+      }
+
+
+      let totalAllocated = 0;
+
+      for (const cat of dto.categories) {
+        const parent = await manager.save(
+          manager.create(Category, {
+            userId,
+            name: cat.name,
+            level: 1,
+            type: 'EXPENSE',
+            sourceType: 'CUSTOM',
+            isActive: true,
+          }),
+        );
+
+        for (const sub of cat.subcategories) {
+          const subcategory = await manager.save(
+            manager.create(Category, {
+              userId,
+              name: sub.name,
+              parentId: parent.id,
+              level: 2,
+              type: 'EXPENSE',
+              sourceType: 'CUSTOM',
+              isActive: true,
+            }),
+          );
+
+          await manager.save(
+            manager.create(BudgetAllocation, {
+              budgetId: budget.id,
+              categoryId: subcategory.id,
+              allocatedAmount: sub.budget,
+            }),
+          );
+          totalAllocated += sub.budget;
+        }
+      }
+
+
+      budget.totalIncomeAmount = totalIncome;
+      budget.totalAllocatedAmount = totalAllocated;
+      await manager.save(budget);
 
       return manager.findOneOrFail(Budget, {
         where: { id: budget.id },

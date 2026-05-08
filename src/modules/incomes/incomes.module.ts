@@ -5,10 +5,10 @@ import { IncomesController } from './incomes.controller';
 import { Income } from './entities/income.entity';
 import { Budget } from '../budgets/entities/budget.entity';
 import { IncomeSource } from '../income-sources/entities/income-source.entity';
-import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Income, Budget, IncomeSource]),  JwtModule.register({})],
+  imports: [TypeOrmModule.forFeature([Income, Budget, IncomeSource]), AuthModule],
   controllers: [IncomesController],
   providers: [IncomesService],
 })
