@@ -132,34 +132,46 @@ export class BudgetsService {
       let totalAllocated = 0;
 
       for (const cat of dto.categories) {
-        const parent = await manager.save(
-          manager.create(Category, {
-            userId,
-            name: cat.name,
-            level: 1,
-            type: 'EXPENSE',
-            sourceType: 'CUSTOM',
-            isActive: true,
-          }),
-        );
-
-        for (const sub of cat.subcategories) {
-          const subcategory = await manager.save(
+        let parentId: string;
+        if (cat.id) {
+          parentId = cat.id;
+        } else {
+          const parent = await manager.save(
             manager.create(Category, {
               userId,
-              name: sub.name,
-              parentId: parent.id,
-              level: 2,
+              name: cat.name,
+              level: 1,
               type: 'EXPENSE',
               sourceType: 'CUSTOM',
               isActive: true,
             }),
           );
+          parentId = parent.id;
+        }
+
+        for (const sub of cat.subcategories) {
+          let subcategoryId: string;
+          if (sub.id) {
+            subcategoryId = sub.id;
+          } else {
+            const subcategory = await manager.save(
+              manager.create(Category, {
+                userId,
+                name: sub.name,
+                parentId,
+                level: 2,
+                type: 'EXPENSE',
+                sourceType: 'CUSTOM',
+                isActive: true,
+              }),
+            );
+            subcategoryId = subcategory.id;
+          }
 
           await manager.save(
             manager.create(BudgetAllocation, {
               budgetId: budget.id,
-              categoryId: subcategory.id,
+              categoryId: subcategoryId,
               allocatedAmount: sub.budget,
             }),
           );
@@ -176,6 +188,14 @@ export class BudgetsService {
         where: { id: budget.id },
         relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
       });
+    });
+  }
+
+  async findCurrent(userId: string): Promise<Budget | null> {
+    const now = new Date();
+    return this.budgetRepo.findOne({
+      where: { userId, year: now.getFullYear(), month: now.getMonth() + 1 },
+      relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
     });
   }
 
@@ -226,7 +246,6 @@ export class BudgetsService {
     const budget = await this.budgetRepo.findOne({ where: { id, userId } });
     if (!budget) throw new NotFoundException('Presupuesto no encontrado');
 
-    // Allocations con categoría y padre en una sola query
     const allocations = await this.dataSource
       .createQueryBuilder(BudgetAllocation, 'a')
       .innerJoin('a.category', 'cat')
@@ -235,7 +254,6 @@ export class BudgetsService {
       .where('a.budget_id = :id', { id })
       .getMany();
 
-    // Gastos reales agrupados por categoría en una sola query
     const spentRows = await this.dataSource
       .createQueryBuilder(Transaction, 't')
       .select('t.category_id', 'categoryId')

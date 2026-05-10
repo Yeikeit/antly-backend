@@ -31,11 +31,13 @@ export class WizardIncomeSourceDto {
 }
 
 export class WizardSubcategoryDto {
+    @IsOptional() @IsUUID() id?: string;
     @IsString() name: string;
     @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) budget: number;
 }
 
 export class WizardCategoryDto {
+    @IsOptional() @IsUUID() id?: string;
     @IsString() name: string;
     @IsArray() @ValidateNested({ each: true }) @Type(() => WizardSubcategoryDto)
     subcategories: WizardSubcategoryDto[];

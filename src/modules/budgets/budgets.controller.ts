@@ -38,6 +38,12 @@ export class BudgetsController {
     return this.budgetsService.createWizard(user.sub, dto);
   }
 
+  @ApiOperation({ summary: 'Obtener el presupuesto activo del mes actual' })
+  @Get('current')
+  findCurrent(@CurrentUser() user: JwtPayload) {
+    return this.budgetsService.findCurrent(user.sub);
+  }
+
   @ApiOperation({ summary: 'Obtener todos los presupuestos del usuario Logueado' })
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
