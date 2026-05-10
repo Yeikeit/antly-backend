@@ -7,11 +7,12 @@ import { BudgetChangeLog } from './entities/budget-change-log.entity';
 import { BudgetAllocation } from '../budget-allocations/entities/budget-allocation.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { JwtModule } from '@nestjs/jwt';
+import { Income } from '../incomes/entities/income.entity';
+import { IncomeSource } from '../income-sources/entities/income-source.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Budget, BudgetChangeLog, BudgetAllocation, Category, Transaction]), JwtModule.register({}),],
+  imports: [TypeOrmModule.forFeature([Budget, BudgetChangeLog, BudgetAllocation, Category, Transaction, Income, IncomeSource]), AuthModule],
   controllers: [BudgetsController],
   providers: [BudgetsService],
 })

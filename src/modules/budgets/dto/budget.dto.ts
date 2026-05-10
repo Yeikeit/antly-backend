@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsBoolean, Min, Max } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsBoolean, Min, Max, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateBudgetDto {
@@ -23,6 +23,34 @@ export class UpsertAllocationDto {
 
 export class CloseBudgetDto {
     @IsString() reason: string;
+}
+
+export class WizardIncomeSourceDto {
+    @IsString() name: string;
+    @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) amount: number;
+}
+
+export class WizardSubcategoryDto {
+    @IsOptional() @IsUUID() id?: string;
+    @IsString() name: string;
+    @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) budget: number;
+}
+
+export class WizardCategoryDto {
+    @IsOptional() @IsUUID() id?: string;
+    @IsString() name: string;
+    @IsArray() @ValidateNested({ each: true }) @Type(() => WizardSubcategoryDto)
+    subcategories: WizardSubcategoryDto[];
+}
+
+export class CreateBudgetWizardDto {
+    @Type(() => Number) @IsInt() @Min(2020) year: number;
+    @Type(() => Number) @IsInt() @Min(1) @Max(12) month: number;
+    @IsOptional() @IsString() notes?: string;
+    @IsArray() @ValidateNested({ each: true }) @Type(() => WizardIncomeSourceDto)
+    incomeSources: WizardIncomeSourceDto[];
+    @IsArray() @ValidateNested({ each: true }) @Type(() => WizardCategoryDto)
+    categories: WizardCategoryDto[];
 }
 
 export interface AllocationSummary {

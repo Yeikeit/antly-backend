@@ -28,9 +28,7 @@ import { UsersModule } from './modules/users/users.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        ssl: config.get<string>('DATABASE_SSL') === 'true'
-          ? { rejectUnauthorized: false }
-          : false,
+        ssl: { rejectUnauthorized: false },
         entities: [User, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',

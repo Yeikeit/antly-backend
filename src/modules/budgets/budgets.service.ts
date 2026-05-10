@@ -16,7 +16,10 @@ import {
   CloseBudgetDto,
   BudgetSummary,
   AllocationSummary,
+  CreateBudgetWizardDto,
 } from './dto/budget.dto';
+import { Income } from '../incomes/entities/income.entity';
+import { IncomeSource } from '../income-sources/entities/income-source.entity';
 
 @Injectable()
 export class BudgetsService {
@@ -77,6 +80,125 @@ export class BudgetsService {
     });
   }
 
+  async createWizard(userId: string, dto: CreateBudgetWizardDto): Promise<Budget> {
+    const exists = await this.budgetRepo.findOne({
+      where: { userId, year: dto.year, month: dto.month },
+    });
+    if (exists) {
+      throw new ConflictException(
+        `Ya existe un presupuesto para ${dto.year}-${String(dto.month).padStart(2, '0')}`,
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+  
+      const budget = manager.create(Budget, {
+        userId,
+        year: dto.year,
+        month: dto.month,
+        notes: dto.notes ?? null,
+        status: 'ACTIVE',
+        totalIncomeAmount: 0,
+        totalAllocatedAmount: 0,
+      });
+      await manager.save(budget);
+
+      const receivedDate = `${dto.year}-${String(dto.month).padStart(2, '0')}-01`;
+      let totalIncome = 0;
+
+      for (const src of dto.incomeSources) {
+        let incomeSource = await manager.findOne(IncomeSource, {
+          where: { userId, name: src.name },
+        });
+        if (!incomeSource) {
+          incomeSource = await manager.save(
+            manager.create(IncomeSource, { userId, name: src.name, isActive: true }),
+          );
+        }
+
+        await manager.save(
+          manager.create(Income, {
+            userId,
+            incomeSourceId: incomeSource.id,
+            budgetId: budget.id,
+            amount: src.amount,
+            receivedDate,
+          }),
+        );
+        totalIncome += src.amount;
+      }
+
+
+      let totalAllocated = 0;
+
+      for (const cat of dto.categories) {
+        let parentId: string;
+        if (cat.id) {
+          parentId = cat.id;
+        } else {
+          const parent = await manager.save(
+            manager.create(Category, {
+              userId,
+              name: cat.name,
+              level: 1,
+              type: 'EXPENSE',
+              sourceType: 'CUSTOM',
+              isActive: true,
+            }),
+          );
+          parentId = parent.id;
+        }
+
+        for (const sub of cat.subcategories) {
+          let subcategoryId: string;
+          if (sub.id) {
+            subcategoryId = sub.id;
+          } else {
+            const subcategory = await manager.save(
+              manager.create(Category, {
+                userId,
+                name: sub.name,
+                parentId,
+                level: 2,
+                type: 'EXPENSE',
+                sourceType: 'CUSTOM',
+                isActive: true,
+              }),
+            );
+            subcategoryId = subcategory.id;
+          }
+
+          await manager.save(
+            manager.create(BudgetAllocation, {
+              budgetId: budget.id,
+              categoryId: subcategoryId,
+              allocatedAmount: sub.budget,
+            }),
+          );
+          totalAllocated += sub.budget;
+        }
+      }
+
+
+      budget.totalIncomeAmount = totalIncome;
+      budget.totalAllocatedAmount = totalAllocated;
+      await manager.save(budget);
+
+      return manager.findOneOrFail(Budget, {
+        where: { id: budget.id },
+        relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
+      });
+    });
+  }
+
+  async findCurrent(userId: string): Promise<Budget | null> {
+    const now = new Date();
+    return this.budgetRepo.findOne({
+      where: { userId, year: now.getFullYear(), month: now.getMonth() + 1 },
+      relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
+    });
+  }
+
   async findAll(userId: string): Promise<Budget[]> {
     return this.budgetRepo.find({
       where: { userId },
@@ -124,7 +246,6 @@ export class BudgetsService {
     const budget = await this.budgetRepo.findOne({ where: { id, userId } });
     if (!budget) throw new NotFoundException('Presupuesto no encontrado');
 
-    // Allocations con categoría y padre en una sola query
     const allocations = await this.dataSource
       .createQueryBuilder(BudgetAllocation, 'a')
       .innerJoin('a.category', 'cat')
@@ -133,7 +254,6 @@ export class BudgetsService {
       .where('a.budget_id = :id', { id })
       .getMany();
 
-    // Gastos reales agrupados por categoría en una sola query
     const spentRows = await this.dataSource
       .createQueryBuilder(Transaction, 't')
       .select('t.category_id', 'categoryId')
