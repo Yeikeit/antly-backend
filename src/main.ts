@@ -5,8 +5,23 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const corsEnv = process.env.CORS_ORIGIN;
+  let corsOrigin: boolean | string | (string | RegExp)[];
+  if (corsEnv && corsEnv.trim().length > 0) {
+    const v = corsEnv.trim();
+    if (v === '*') {
+      corsOrigin = true;
+    } else if (v.includes(',')) {
+      corsOrigin = v.split(',').map((s) => s.trim());
+    } else {
+      corsOrigin = v;
+    }
+  } else {
+    corsOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+  }
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
   });
   app.useGlobalPipes(
