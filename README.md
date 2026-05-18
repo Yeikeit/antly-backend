@@ -70,6 +70,16 @@ $ mau deploy
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+### CORS in production
+
+When deploying, set the `CORS_ORIGIN` environment variable to the allowed frontend origin(s). You can provide a single origin (e.g. `https://app.example.com`), a comma-separated list (`https://app.example.com,https://admin.example.com`), or `*` to allow all origins (not recommended). If `CORS_ORIGIN` is not set the app falls back to `FRONTEND_URL` or `http://localhost:3000`.
+
+Example (environment variable):
+
+```
+CORS_ORIGIN=https://app.example.com
+```
+
 ## Resources
 
 Check out a few resources that may come in handy when working with NestJS:
