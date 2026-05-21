@@ -32,6 +32,13 @@ import { UsersModule } from './modules/users/users.module';
         entities: [User, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
+        connectTimeoutMS: 5000,
+        extra: {
+          max: 5,
+          min: 1,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        },
       }),
     }),
     AuthModule,
