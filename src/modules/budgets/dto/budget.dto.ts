@@ -1,4 +1,4 @@
-import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsBoolean, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import { IsInt, IsString, IsOptional, IsEnum, IsUUID, IsNumber, IsBoolean, Min, Max, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateBudgetDto {
@@ -39,6 +39,7 @@ export class WizardSubcategoryDto {
 export class WizardCategoryDto {
     @IsOptional() @IsUUID() id?: string;
     @IsString() name: string;
+    @IsOptional() @IsIn(['EXPENSE', 'SAVING']) type?: 'EXPENSE' | 'SAVING';
     @IsArray() @ValidateNested({ each: true }) @Type(() => WizardSubcategoryDto)
     subcategories: WizardSubcategoryDto[];
 }
