@@ -1,5 +1,5 @@
 import {
-    IsString, IsEmail, IsOptional,
+    IsString, IsEmail, IsOptional, IsBoolean,
     MinLength, MaxLength, Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -37,3 +37,11 @@ export class ChangePasswordDto {
     })
     newPassword: string;
 }
+
+export class UpdatePreferencesDto {
+    @ApiProperty({ required: false, description: 'Activar/desactivar automatización de presupuesto mensual' })
+    @IsOptional()
+    @IsBoolean()
+    budgetAutomation?: boolean;
+}
+

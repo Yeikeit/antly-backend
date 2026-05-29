@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { UpdateProfileDto, ChangePasswordDto } from './dto/user.dto';
+import { UpdateProfileDto, ChangePasswordDto, UpdatePreferencesDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -43,5 +43,19 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   changePassword(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasswordDto) {
     return this.usersService.changePassword(user.sub, dto);
+  }
+
+  @ApiOperation({ summary: 'Obtener preferencias del usuario' })
+  @ApiResponse({ status: 200, description: 'Preferencias del usuario' })
+  @Get('me/preferences')
+  getPreferences(@CurrentUser() user: JwtPayload) {
+    return this.usersService.getPreferences(user.sub);
+  }
+
+  @ApiOperation({ summary: 'Actualizar preferencias del usuario' })
+  @ApiResponse({ status: 200, description: 'Preferencias actualizadas' })
+  @Patch('me/preferences')
+  updatePreferences(@CurrentUser() user: JwtPayload, @Body() dto: UpdatePreferencesDto) {
+    return this.usersService.updatePreferences(user.sub, dto);
   }
 }

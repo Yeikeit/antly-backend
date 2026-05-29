@@ -192,9 +192,9 @@ export class BudgetsService {
   }
 
   async findCurrent(userId: string): Promise<Budget | null> {
-    const now = new Date();
     return this.budgetRepo.findOne({
-      where: { userId, year: now.getFullYear(), month: now.getMonth() + 1 },
+      where: { userId, status: 'ACTIVE' },
+      order: { year: 'DESC', month: 'DESC' },
       relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
     });
   }
