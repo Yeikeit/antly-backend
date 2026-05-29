@@ -199,6 +199,52 @@ export class BudgetsService {
     });
   }
 
+  async getLastBudgetStructure(userId: string): Promise<{
+    year: number; month: number;
+    incomeSources: { name: string; amount: number }[];
+    categories: { id: string; name: string; type: string; subcategories: { id: string; name: string; budget: string }[] }[];
+  } | null> {
+    const last = await this.budgetRepo.findOne({
+      where: { userId },
+      order: { year: 'DESC', month: 'DESC' },
+      relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
+    });
+    if (!last) return null;
+
+    const incomes = await this.dataSource
+      .createQueryBuilder(Income, 'i')
+      .innerJoin('i.incomeSource', 'src')
+      .addSelect(['src.id', 'src.name'])
+      .where('i.budget_id = :id', { id: last.id })
+      .getMany();
+
+    const parentMap = new Map<string, { id: string; name: string; type: string; subcategories: { id: string; name: string; budget: string }[] }>();
+    for (const alloc of last.allocations) {
+      const cat = alloc.category;
+      if (!cat.parentId || !cat.parent) continue;
+      if (!parentMap.has(cat.parentId)) {
+        parentMap.set(cat.parentId, {
+          id: cat.parentId,
+          name: cat.parent.name,
+          type: cat.parent.type,
+          subcategories: [],
+        });
+      }
+      parentMap.get(cat.parentId)!.subcategories.push({
+        id: cat.id,
+        name: cat.name,
+        budget: String(Number(alloc.allocatedAmount)),
+      });
+    }
+
+    return {
+      year: last.year,
+      month: last.month,
+      incomeSources: incomes.map((i) => ({ name: (i as any).incomeSource?.name ?? '', amount: Number(i.amount) })),
+      categories: [...parentMap.values()],
+    };
+  }
+
   async findAll(userId: string): Promise<Budget[]> {
     return this.budgetRepo.find({
       where: { userId },

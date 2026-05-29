@@ -44,6 +44,12 @@ export class BudgetsController {
     return this.budgetsService.findCurrent(user.sub);
   }
 
+  @ApiOperation({ summary: 'Obtener estructura del último presupuesto para copiar al wizard' })
+  @Get('last-structure')
+  getLastBudgetStructure(@CurrentUser() user: JwtPayload) {
+    return this.budgetsService.getLastBudgetStructure(user.sub);
+  }
+
   @ApiOperation({ summary: 'Obtener todos los presupuestos del usuario Logueado' })
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
