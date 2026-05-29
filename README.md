@@ -1,108 +1,152 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Antly — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para la gestión de presupuestos personales. Provee autenticación JWT, gestión de usuarios, categorías, presupuestos mensuales, transacciones e ingresos.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+- **NestJS 11** — framework modular para Node.js
+- **TypeORM 0.3** — ORM con PostgreSQL
+- **PostgreSQL** — base de datos relacional
+- **JWT + Refresh Tokens** — autenticación stateless
+- **Swagger** — documentación automática de la API (solo en desarrollo)
+- **class-validator / class-transformer** — validación y transformación de DTOs
+- **@nestjs/schedule** — tareas programadas (automatización de presupuestos)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requisitos
 
-## Project setup
+- Node.js ≥ 20
+- PostgreSQL ≥ 14
+
+## Variables de entorno
+
+Crea un archivo `.env` en la raíz del proyecto:
+
+```env
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=antly
+
+# JWT
+JWT_SECRET=your_jwt_secret
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# App
+PORT=8080
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+```
+
+## Instalación y desarrollo
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+```bash
+npm install
+npm run start:dev
+```
+
+La API estará disponible en [http://localhost:8080](http://localhost:8080).
+
+## Scripts
+
+| Script | Descripción |
+|--------|-------------|
+| `npm run start:dev` | Servidor de desarrollo con hot-reload |
+| `npm run start:debug` | Modo debug con watch |
+| `npm run build` | Compilación para producción |
+| `npm run start:prod` | Servidor de producción (requiere build previo) |
+| `npm run lint` | Análisis estático con ESLint |
+| `npm run test` | Tests unitarios |
+| `npm run test:e2e` | Tests end-to-end |
+| `npm run test:cov` | Cobertura de tests |
+
+## Documentación de la API
+
+En modo desarrollo, Swagger está disponible en:
+
+```
+http://localhost:8080/api/docs
+```
+
+## Estructura de carpetas
+
+```
+src/
+  common/           # Piezas transversales reutilizables
+    decorators/     # Decoradores custom (ej: @CurrentUser)
+    filters/        # Filtros de excepción globales
+    guards/         # Guards de autenticación y roles
+    interceptors/   # Interceptores (transform, logging)
+    pipes/          # Pipes de validación
+    dto/            # DTOs compartidos (paginación, etc.)
+
+  config/           # Configuración de la app (TypeORM, JWT, env)
+
+  database/
+    migrations/     # Migraciones TypeORM
+    seeds/          # Seeds de datos iniciales
+
+  modules/
+    auth/           # Registro, login, refresh token, logout
+    users/          # Perfil y preferencias de usuario
+    income-sources/ # Fuentes de ingreso configurables por usuario
+    incomes/        # Ingresos registrados del mes
+    budgets/        # Presupuesto mensual + wizard de creación + resumen
+    budget-allocations/  # Asignaciones de montos a subcategorías
+    budget-automation/   # Automatización y cierre de presupuestos
+    categories/     # Categorías y subcategorías jerárquicas
+    transactions/   # Registro de gastos e ingresos diarios
+
+  app.module.ts
+  main.ts
+```
+
+## Módulos principales
+
+| Módulo | Descripción |
+|--------|-------------|
+| `auth` | Autenticación con JWT. Access token (15 min) + refresh token (7 días) con rotación. |
+| `budgets` | Presupuesto mensual por usuario. Máximo uno por mes/año. Incluye wizard de creación, resumen con métricas y cierre manual. |
+| `categories` | Árbol jerárquico de dos niveles: categoría padre + subcategorías. Tipos: `EXPENSE`, `SAVING`, `INCOME`. |
+| `transactions` | Gastos e ingresos diarios asociados a subcategorías. Tipos: `EXPENSE`, `INCOME`, `SAVING`. |
+| `incomes` | Ingresos reales del mes, asociados a fuentes de ingreso. |
+| `income-sources` | Fuentes de ingreso del usuario (salario, freelance, etc.). |
+| `budget-automation` | Tarea programada que procesa cierres automáticos de presupuestos. |
+
+## Reglas de negocio clave
+
+- Un usuario tiene **un solo presupuesto por mes y año**.
+- Las categorías tienen **dos niveles**: padre (agrupación) e hijo (subcategoría). Las asignaciones de presupuesto siempre son sobre subcategorías.
+- El tipo `SAVING` en categorías permite separar métricas de ahorro del gasto corriente.
+- Un presupuesto cerrado es de **solo lectura**.
+
+## CORS
+
+En producción, configurar la variable `CORS_ORIGIN`:
+
+```env
+# Un solo origen
+CORS_ORIGIN=https://app.ejemplo.com
+
+# Múltiples orígenes (separados por coma)
+CORS_ORIGIN=https://app.ejemplo.com,https://admin.ejemplo.com
+```
+
+Si no se define, el backend permite el origen de `FRONTEND_URL` o `http://localhost:3000`.
+
+## Docker
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Desde la raíz del monorepo
+docker compose up --build
 ```
 
-## Run tests
+El backend corre en el puerto `8080` dentro del contenedor.
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-### CORS in production
-
-When deploying, set the `CORS_ORIGIN` environment variable to the allowed frontend origin(s). You can provide a single origin (e.g. `https://app.example.com`), a comma-separated list (`https://app.example.com,https://admin.example.com`), or `*` to allow all origins (not recommended). If `CORS_ORIGIN` is not set the app falls back to `FRONTEND_URL` or `http://localhost:3000`.
-
-Example (environment variable):
-
-```
-CORS_ORIGIN=https://app.example.com
-```
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
