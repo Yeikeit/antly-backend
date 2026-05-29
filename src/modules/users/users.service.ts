@@ -8,7 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
-import { UpdateProfileDto, ChangePasswordDto } from './dto/user.dto';
+import { UserPreferences } from './entities/user-preferences.entity';
+import { UpdateProfileDto, ChangePasswordDto, UpdatePreferencesDto } from './dto/user.dto';
 
 export interface UserProfile {
   id: string;
@@ -25,6 +26,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(UserPreferences)
+    private readonly preferencesRepo: Repository<UserPreferences>,
   ) {}
 
   async getProfile(userId: string): Promise<UserProfile> {
@@ -61,6 +64,26 @@ export class UsersService {
 
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepo.save(user);
+  }
+
+  async getPreferences(userId: string): Promise<UserPreferences> {
+    let prefs = await this.preferencesRepo.findOne({ where: { userId } });
+    if (!prefs) {
+      prefs = this.preferencesRepo.create({ userId, budgetAutomation: true });
+      await this.preferencesRepo.save(prefs);
+    }
+    return prefs;
+  }
+
+  async updatePreferences(userId: string, dto: UpdatePreferencesDto): Promise<UserPreferences> {
+    let prefs = await this.preferencesRepo.findOne({ where: { userId } });
+    if (!prefs) {
+      prefs = this.preferencesRepo.create({ userId, budgetAutomation: true });
+    }
+    if (dto.budgetAutomation !== undefined) {
+      prefs.budgetAutomation = dto.budgetAutomation;
+    }
+    return this.preferencesRepo.save(prefs);
   }
 
   private toProfile(user: User): UserProfile {

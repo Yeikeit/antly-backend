@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { User } from './modules/users/entities/user.entity';
+import { UserPreferences } from './modules/users/entities/user-preferences.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
 import { Budget } from './modules/budgets/entities/budget.entity';
 import { BudgetChangeLog } from './modules/budgets/entities/budget-change-log.entity';
@@ -18,10 +20,12 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { IncomesModule } from './modules/incomes/incomes.module';
 import { Transaction } from './modules/transactions/entities/transaction.entity';
 import { UsersModule } from './modules/users/users.module';
+import { BudgetAutomationModule } from './modules/budget-automation/budget-automation.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -29,7 +33,7 @@ import { UsersModule } from './modules/users/users.module';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         ssl: { rejectUnauthorized: false },
-        entities: [User, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction],
+        entities: [User, UserPreferences, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
         connectTimeoutMS: 5000,
@@ -48,7 +52,8 @@ import { UsersModule } from './modules/users/users.module';
     IncomeSourcesModule,
     IncomesModule,
     TransactionsModule,
-    UsersModule
+    UsersModule,
+    BudgetAutomationModule,
   ],
   controllers: [],
   providers: [],
