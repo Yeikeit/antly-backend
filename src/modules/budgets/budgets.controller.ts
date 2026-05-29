@@ -4,6 +4,7 @@ import {
   Post,
   Patch,
   Put,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -95,5 +96,25 @@ export class BudgetsController {
     @Body() dto: CloseBudgetDto,
   ) {
     return this.budgetsService.close(user.sub, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Eliminar presupuesto cerrado por ID' })
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.budgetsService.remove(user.sub, id);
+  }
+
+  @ApiOperation({ summary: 'Reabrir un presupuesto cerrado' })
+  @Patch(':id/reopen')
+  @HttpCode(HttpStatus.OK)
+  reopen(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.budgetsService.reopen(user.sub, id);
   }
 }
