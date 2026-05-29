@@ -54,6 +54,14 @@ export class CreateBudgetWizardDto {
     categories: WizardCategoryDto[];
 }
 
+export class UpdateBudgetWizardDto {
+    @IsOptional() @IsString() notes?: string;
+    @IsArray() @ValidateNested({ each: true }) @Type(() => WizardIncomeSourceDto)
+    incomeSources: WizardIncomeSourceDto[];
+    @IsArray() @ValidateNested({ each: true }) @Type(() => WizardCategoryDto)
+    categories: WizardCategoryDto[];
+}
+
 export interface AllocationSummary {
     categoryId: string;
     categoryName: string;

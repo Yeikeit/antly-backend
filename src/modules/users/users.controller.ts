@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Body,
   UseGuards,
   HttpCode,
@@ -57,5 +58,14 @@ export class UsersController {
   @Patch('me/preferences')
   updatePreferences(@CurrentUser() user: JwtPayload, @Body() dto: UpdatePreferencesDto) {
     return this.usersService.updatePreferences(user.sub, dto);
+  }
+
+  @ApiOperation({ summary: 'Eliminar cuenta del usuario autenticado (soft delete)' })
+  @ApiResponse({ status: 204, description: 'Cuenta eliminada' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteAccount(@CurrentUser() user: JwtPayload) {
+    return this.usersService.deleteAccount(user.sub);
   }
 }

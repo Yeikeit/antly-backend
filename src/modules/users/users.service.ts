@@ -86,6 +86,14 @@ export class UsersService {
     return this.preferencesRepo.save(prefs);
   }
 
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId, isActive: true } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    user.isActive = false;
+    await this.userRepo.save(user);
+  }
+
   private toProfile(user: User): UserProfile {
     return {
       id: user.id,
