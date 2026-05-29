@@ -488,7 +488,7 @@ export class BudgetsService {
       };
     });
 
-    const totalSpent = allocationSummaries.reduce((sum, a) => sum + a.spent, 0);
+    const totalSpent = spentRows.reduce((sum, r) => sum + parseFloat(r.spent), 0);
 
     return {
       budgetId: budget.id,
