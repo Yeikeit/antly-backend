@@ -365,6 +365,17 @@ export class BudgetsService {
     });
   }
 
+  async remove(userId: string, id: string): Promise<void> {
+    const budget = await this.budgetRepo.findOne({ where: { id, userId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    if (budget.status === 'ACTIVE') {
+      throw new BadRequestException(
+        'No se puede eliminar un presupuesto activo. Ciérralo primero.',
+      );
+    }
+    await this.budgetRepo.remove(budget);
+  }
+
   async findOne(userId: string, id: string): Promise<Budget> {
     const budget = await this.budgetRepo.findOne({
       where: { id, userId },
@@ -394,6 +405,41 @@ export class BudgetsService {
           reason: dto.reason,
           oldValue: oldStatus,
           newValue: 'CLOSED',
+        }),
+      );
+
+      return budget;
+    });
+  }
+
+  async reopen(userId: string, id: string): Promise<Budget> {
+    const budget = await this.budgetRepo.findOne({ where: { id, userId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    if (budget.status !== 'CLOSED') {
+      throw new BadRequestException('Solo se puede reabrir un presupuesto cerrado');
+    }
+
+    const activeExists = await this.budgetRepo.findOne({
+      where: { userId, status: 'ACTIVE' },
+    });
+    if (activeExists) {
+      throw new ConflictException(
+        'Ya tienes un presupuesto activo. Ciérralo antes de reabrir otro.',
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      budget.status = 'ACTIVE';
+      await manager.save(budget);
+
+      await manager.save(
+        manager.create(BudgetChangeLog, {
+          budgetId: id,
+          changedByUserId: userId,
+          changeType: 'STATUS_CHANGE',
+          reason: 'Reapertura manual',
+          oldValue: 'CLOSED',
+          newValue: 'ACTIVE',
         }),
       );
 
