@@ -33,11 +33,24 @@ export class AuthService {
     const existing = await this.userRepository.findOne({
       where: { email: dto.email },
     });
-    if (existing) {
+
+    if (existing && existing.isActive) {
       throw new ConflictException('El email ya está registrado');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    if (existing && !existing.isActive) {
+      // Reactivar cuenta eliminada con los nuevos datos
+      existing.passwordHash = passwordHash;
+      existing.firstName = dto.firstName;
+      existing.lastName = dto.lastName;
+      existing.isActive = true;
+      await this.userRepository.save(existing);
+      await this.seedDefaultCategories(existing.id);
+      return this.buildTokenResponse(existing);
+    }
+
     const user = this.userRepository.create({
       email: dto.email,
       passwordHash,

@@ -17,6 +17,7 @@ import {
   BudgetSummary,
   AllocationSummary,
   CreateBudgetWizardDto,
+  UpdateBudgetWizardDto,
 } from './dto/budget.dto';
 import { Income } from '../incomes/entities/income.entity';
 import { IncomeSource } from '../income-sources/entities/income-source.entity';
@@ -183,6 +184,118 @@ export class BudgetsService {
       budget.totalIncomeAmount = totalIncome;
       budget.totalAllocatedAmount = totalAllocated;
       await manager.save(budget);
+
+      return manager.findOneOrFail(Budget, {
+        where: { id: budget.id },
+        relations: ['allocations', 'allocations.category', 'allocations.category.parent'],
+      });
+    });
+  }
+
+  async updateWizard(userId: string, id: string, dto: UpdateBudgetWizardDto): Promise<Budget> {
+    const budget = await this.budgetRepo.findOne({ where: { id, userId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    if (budget.status === 'CLOSED') {
+      throw new BadRequestException('No se puede editar un presupuesto cerrado');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      // 1. Replace all incomes
+      await manager.delete(Income, { budgetId: id });
+
+      const receivedDate = `${budget.year}-${String(budget.month).padStart(2, '0')}-01`;
+      let totalIncome = 0;
+
+      for (const src of dto.incomeSources) {
+        let incomeSource = await manager.findOne(IncomeSource, {
+          where: { userId, name: src.name },
+        });
+        if (!incomeSource) {
+          incomeSource = await manager.save(
+            manager.create(IncomeSource, { userId, name: src.name, isActive: true }),
+          );
+        }
+        await manager.save(
+          manager.create(Income, {
+            userId,
+            incomeSourceId: incomeSource.id,
+            budgetId: id,
+            amount: src.amount,
+            receivedDate,
+          }),
+        );
+        totalIncome += src.amount;
+      }
+
+      // 2. Replace all allocations
+      await manager.delete(BudgetAllocation, { budgetId: id });
+      let totalAllocated = 0;
+
+      for (const cat of dto.categories) {
+        let parentId: string;
+        if (cat.id) {
+          parentId = cat.id;
+        } else {
+          const parent = await manager.save(
+            manager.create(Category, {
+              userId,
+              name: cat.name,
+              level: 1,
+              type: cat.type ?? 'EXPENSE',
+              sourceType: 'CUSTOM',
+              isActive: true,
+            }),
+          );
+          parentId = parent.id;
+        }
+
+        for (const sub of cat.subcategories) {
+          let subcategoryId: string;
+          if (sub.id) {
+            subcategoryId = sub.id;
+          } else {
+            const subcategory = await manager.save(
+              manager.create(Category, {
+                userId,
+                name: sub.name,
+                parentId,
+                level: 2,
+                type: cat.type ?? 'EXPENSE',
+                sourceType: 'CUSTOM',
+                isActive: true,
+              }),
+            );
+            subcategoryId = subcategory.id;
+          }
+
+          await manager.save(
+            manager.create(BudgetAllocation, {
+              budgetId: id,
+              categoryId: subcategoryId,
+              allocatedAmount: sub.budget,
+            }),
+          );
+          totalAllocated += sub.budget;
+        }
+      }
+
+      // 3. Update totals
+      budget.totalIncomeAmount = totalIncome;
+      budget.totalAllocatedAmount = totalAllocated;
+      if (dto.notes !== undefined) budget.notes = dto.notes;
+      await manager.save(budget);
+
+      // 4. Log change
+      await manager.save(
+        manager.create(BudgetChangeLog, {
+          budgetId: id,
+          changedByUserId: userId,
+          changeType: 'REALLOCATION',
+          reason: 'Edición desde wizard',
+          oldValue: null,
+          newValue: JSON.stringify({ totalIncome, totalAllocated }),
+        }),
+      );
 
       return manager.findOneOrFail(Budget, {
         where: { id: budget.id },

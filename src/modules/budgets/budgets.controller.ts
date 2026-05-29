@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Param,
   Body,
   UseGuards,
@@ -11,7 +12,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { BudgetsService } from './budgets.service';
-import { CreateBudgetDto, CloseBudgetDto, CreateBudgetWizardDto } from './dto/budget.dto';
+import { CreateBudgetDto, CloseBudgetDto, CreateBudgetWizardDto, UpdateBudgetWizardDto } from './dto/budget.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../common/decorators/current-user.decorator';
@@ -48,6 +49,17 @@ export class BudgetsController {
   @Get('last-structure')
   getLastBudgetStructure(@CurrentUser() user: JwtPayload) {
     return this.budgetsService.getLastBudgetStructure(user.sub);
+  }
+
+  @ApiOperation({ summary: 'Actualizar presupuesto activo desde el wizard (reemplaza ingresos y asignaciones)' })
+  @Put(':id/wizard')
+  @HttpCode(HttpStatus.OK)
+  updateWizard(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateBudgetWizardDto,
+  ) {
+    return this.budgetsService.updateWizard(user.sub, id, dto);
   }
 
   @ApiOperation({ summary: 'Obtener todos los presupuestos del usuario Logueado' })
