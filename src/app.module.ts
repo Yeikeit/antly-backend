@@ -21,6 +21,9 @@ import { IncomesModule } from './modules/incomes/incomes.module';
 import { Transaction } from './modules/transactions/entities/transaction.entity';
 import { UsersModule } from './modules/users/users.module';
 import { BudgetAutomationModule } from './modules/budget-automation/budget-automation.module';
+import { EmailModule } from './modules/email/email.module';
+import { EmailTemplate } from './modules/email/entities/email-template.entity';
+import { PasswordResetToken } from './modules/auth/entities/password-reset-token.entity';
 
 @Module({
   imports: [
@@ -33,7 +36,7 @@ import { BudgetAutomationModule } from './modules/budget-automation/budget-autom
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         ssl: { rejectUnauthorized: false },
-        entities: [User, UserPreferences, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction],
+        entities: [User, UserPreferences, RefreshToken, Budget, BudgetChangeLog, BudgetAllocation, Category, IncomeSource, Income, Transaction, EmailTemplate, PasswordResetToken],
         synchronize: false,
         logging: config.get<string>('NODE_ENV') === 'development',
         connectTimeoutMS: 5000,
@@ -54,6 +57,7 @@ import { BudgetAutomationModule } from './modules/budget-automation/budget-autom
     TransactionsModule,
     UsersModule,
     BudgetAutomationModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [],

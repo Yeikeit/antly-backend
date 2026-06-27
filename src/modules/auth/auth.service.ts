@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -11,10 +12,12 @@ import { createHash, randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { Category } from '../categories/entities/category.entity';
 import { CATEGORY_TEMPLATE } from '../categories/utils/category-template';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -23,10 +26,13 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(PasswordResetToken)
+    private readonly resetTokenRepository: Repository<PasswordResetToken>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -142,6 +148,42 @@ export class AuthService {
 
   async getUserById(userId: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id: userId, isActive: true } });
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email, isActive: true } });
+    if (!user) return;
+
+    const rawToken = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.resetTokenRepository.save(
+      this.resetTokenRepository.create({ userId: user.id, token: rawToken, expiresAt }),
+    );
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+    await this.emailService.send('password-reset', user.email, {
+      firstName: user.firstName,
+      resetLink,
+      year: new Date().getFullYear(),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const record = await this.resetTokenRepository.findOne({
+      where: { token, used: false },
+      relations: ['user'],
+    });
+
+    if (!record || record.expiresAt < new Date()) {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.userRepository.update(record.userId, { passwordHash });
+    await this.resetTokenRepository.update(record.id, { used: true });
   }
 
   private async buildTokenResponse(user: User) {
