@@ -27,6 +27,8 @@ export class BudgetsService {
   constructor(
     @InjectRepository(Budget)
     private readonly budgetRepo: Repository<Budget>,
+    @InjectRepository(BudgetChangeLog)
+    private readonly changeLogRepo: Repository<BudgetChangeLog>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
     private readonly dataSource: DataSource,
@@ -444,6 +446,15 @@ export class BudgetsService {
       );
 
       return budget;
+    });
+  }
+
+  async getChangeLogs(userId: string, budgetId: string): Promise<BudgetChangeLog[]> {
+    const budget = await this.budgetRepo.findOne({ where: { id: budgetId, userId } });
+    if (!budget) throw new NotFoundException('Presupuesto no encontrado');
+    return this.changeLogRepo.find({
+      where: { budgetId },
+      order: { createdAt: 'DESC' },
     });
   }
 
