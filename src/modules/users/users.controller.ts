@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Body,
@@ -58,6 +59,14 @@ export class UsersController {
   @Patch('me/preferences')
   updatePreferences(@CurrentUser() user: JwtPayload, @Body() dto: UpdatePreferencesDto) {
     return this.usersService.updatePreferences(user.sub, dto);
+  }
+
+  @ApiOperation({ summary: 'Enviar invitación por correo a un amigo' })
+  @ApiResponse({ status: 204, description: 'Invitación enviada' })
+  @Post('me/invite')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  sendInvite(@CurrentUser() user: JwtPayload, @Body() body: { email: string }) {
+    return this.usersService.sendInvite(user.sub, body.email);
   }
 
   @ApiOperation({ summary: 'Eliminar cuenta del usuario autenticado (soft delete)' })

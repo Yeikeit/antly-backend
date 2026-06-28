@@ -78,6 +78,15 @@ export class BudgetsController {
     return this.budgetsService.findOne(user.sub, id);
   }
 
+  @ApiOperation({ summary: 'Obtener historial de cambios de un presupuesto' })
+  @Get(':id/history')
+  getHistory(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.budgetsService.getChangeLogs(user.sub, id);
+  }
+
   @ApiOperation({ summary: 'Obtener resumen de presupuesto del usuario Logueado por ID' })
   @Get(':id/summary')
   getSummary(

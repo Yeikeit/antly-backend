@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
 import { UpdateProfileDto, ChangePasswordDto, UpdatePreferencesDto } from './dto/user.dto';
+import { EmailService } from '../email/email.service';
 
 export interface UserProfile {
   id: string;
@@ -28,6 +29,7 @@ export class UsersService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(UserPreferences)
     private readonly preferencesRepo: Repository<UserPreferences>,
+    private readonly emailService: EmailService,
   ) {}
 
   async getProfile(userId: string): Promise<UserProfile> {
@@ -92,6 +94,15 @@ export class UsersService {
 
     user.isActive = false;
     await this.userRepo.save(user);
+  }
+
+  async sendInvite(fromUserId: string, toEmail: string): Promise<void> {
+    const sender = await this.userRepo.findOne({ where: { id: fromUserId, isActive: true } });
+    if (!sender) throw new NotFoundException('Usuario no encontrado');
+
+    const senderName = `${sender.firstName} ${sender.lastName}`.trim() || sender.email;
+
+    await this.emailService.send('invite-friend', toEmail, { senderName });
   }
 
   private toProfile(user: User): UserProfile {
