@@ -2,7 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import * as Handlebars from 'handlebars';
 import { EmailTemplate } from './entities/email-template.entity';
 
@@ -26,7 +27,7 @@ export class EmailService {
         user: config.get<string>('GMAIL_USER'),
         pass: config.get<string>('GMAIL_PASS'),
       },
-    });
+    } as SMTPTransport.Options);
 
     this.from = `Antly <${config.get<string>('GMAIL_USER')}>`;
   }
