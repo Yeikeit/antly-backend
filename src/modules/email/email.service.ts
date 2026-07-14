@@ -66,10 +66,12 @@ export class EmailService {
     const subject = Handlebars.compile(template.subject)(params);
     const html = Handlebars.compile(template.htmlBody)(params);
 
+    const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`;
+
     const mime = [
       `From: ${this.from}`,
       `To: ${to}`,
-      `Subject: ${subject}`,
+      `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=UTF-8',
       '',
