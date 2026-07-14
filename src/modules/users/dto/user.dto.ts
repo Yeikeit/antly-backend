@@ -1,8 +1,6 @@
-import {
-    IsString, IsEmail, IsOptional, IsBoolean,
-    MinLength, MaxLength, Matches,
-} from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsBoolean, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { PasswordField } from '../../../common/validators/password.validator';
 
 export class UpdateProfileDto {
     @ApiProperty({ required: false, maxLength: 100 })
@@ -29,12 +27,7 @@ export class ChangePasswordDto {
     currentPassword: string;
 
     @ApiProperty({ minLength: 8, description: 'Debe contener mayúscula, minúscula y número' })
-    @IsString()
-    @MinLength(8)
-    @MaxLength(100)
-    @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-        message: 'Contraseña debe contener al menos una letra mayúscula, una letra minúscula y un número',
-    })
+    @PasswordField()
     newPassword: string;
 }
 

@@ -104,17 +104,43 @@ export class AuthService {
     }
   }
 
+  private static readonly MAX_ATTEMPTS = 5;
+  private static readonly LOCK_MINUTES = 15;
+
   async login(dto: LoginDto) {
     const user = await this.userRepository.findOne({
       where: { email: dto.email },
     });
+
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const mins = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(
+        `Cuenta bloqueada por demasiados intentos fallidos. Intenta en ${mins} minuto${mins !== 1 ? 's' : ''}.`,
+      );
+    }
+
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
+
     if (!passwordValid) {
+      const attempts = (user.failedLoginAttempts ?? 0) + 1;
+      const update: Partial<typeof user> = { failedLoginAttempts: attempts };
+
+      if (attempts >= AuthService.MAX_ATTEMPTS) {
+        update.lockedUntil = new Date(Date.now() + AuthService.LOCK_MINUTES * 60 * 1000);
+        update.failedLoginAttempts = 0;
+      }
+
+      await this.userRepository.update(user.id, update);
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    // Login exitoso: resetear contador
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await this.userRepository.update(user.id, { failedLoginAttempts: 0, lockedUntil: null });
     }
 
     return this.buildTokenResponse(user);
