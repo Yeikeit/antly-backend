@@ -2,15 +2,14 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { Resend } from 'resend';
 import * as Handlebars from 'handlebars';
 import { EmailTemplate } from './entities/email-template.entity';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly transporter: nodemailer.Transporter;
+  private readonly resend: Resend;
   private readonly from: string;
 
   constructor(
@@ -18,33 +17,20 @@ export class EmailService {
     private readonly templateRepo: Repository<EmailTemplate>,
     private readonly config: ConfigService,
   ) {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      family: 4,
-      auth: {
-        user: config.get<string>('GMAIL_USER'),
-        pass: config.get<string>('GMAIL_PASS'),
-      },
-    } as SMTPTransport.Options);
-
-    this.from = `Antly <${config.get<string>('GMAIL_USER')}>`;
+    this.resend = new Resend(config.get<string>('RESEND_API_KEY'));
+    this.from = config.get<string>('EMAIL_FROM') ?? 'Antly <onboarding@resend.dev>';
   }
 
   async send(slug: string, to: string, params: Record<string, unknown>): Promise<void> {
     const template = await this.templateRepo.findOne({ where: { slug } });
     if (!template) throw new NotFoundException(`Email template "${slug}" not found`);
 
-    const compiledSubject = Handlebars.compile(template.subject)(params);
-    const compiledHtml = Handlebars.compile(template.htmlBody)(params);
+    const subject = Handlebars.compile(template.subject)(params);
+    const html = Handlebars.compile(template.htmlBody)(params);
 
-    await this.transporter.sendMail({
-      from: this.from,
-      to,
-      subject: compiledSubject,
-      html: compiledHtml,
-    });
+    const { error } = await this.resend.emails.send({ from: this.from, to, subject, html });
+
+    if (error) throw new Error(`Resend error: ${error.message}`);
 
     this.logger.log(`Email "${slug}" sent to ${to}`);
   }
