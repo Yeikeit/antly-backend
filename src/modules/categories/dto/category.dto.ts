@@ -1,5 +1,5 @@
 import {
-    IsString, IsEnum, IsOptional, IsUUID,
+    IsString, IsNotEmpty, IsEnum, IsOptional, IsUUID,
     IsBoolean, IsInt, Min, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -31,6 +31,7 @@ export class CategoryTreeDto extends CategoryResponseDto {
 export class CreateCategoryDto {
     @ApiProperty({ example: 'Alimentación', maxLength: 100 })
     @IsString()
+    @IsNotEmpty()
     @MaxLength(100)
     name: string;
 
@@ -55,6 +56,7 @@ export class UpdateCategoryDto {
     @ApiProperty({ required: false, maxLength: 100 })
     @IsOptional()
     @IsString()
+    @IsNotEmpty()
     @MaxLength(100)
     name?: string;
 

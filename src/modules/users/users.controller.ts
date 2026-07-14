@@ -10,6 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Logger } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateProfileDto, ChangePasswordDto, UpdatePreferencesDto } from './dto/user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ import type { JwtPayload } from '../../common/decorators/current-user.decorator'
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
   constructor(private readonly usersService: UsersService) {}
 
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
@@ -66,7 +68,9 @@ export class UsersController {
   @Post('me/invite')
   @HttpCode(HttpStatus.NO_CONTENT)
   sendInvite(@CurrentUser() user: JwtPayload, @Body() body: { email: string }) {
-    return this.usersService.sendInvite(user.sub, body.email);
+    this.usersService.sendInvite(user.sub, body.email).catch((err) =>
+      this.logger.error('Invite email failed', err),
+    );
   }
 
   @ApiOperation({ summary: 'Eliminar cuenta del usuario autenticado (soft delete)' })
